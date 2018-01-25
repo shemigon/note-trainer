@@ -146,6 +146,8 @@
 
   const VF = Vex.Flow;
 
+  let noteTimeStart;
+
 // Create an SVG renderer and attach it to the DIV element named "boo".
   let $div = $("#boo");
 
@@ -159,8 +161,10 @@
   stave.addClef("treble");
   stave.setContext(context).draw();
 
-  function renderNote(note, duration) {
+  function renderNote(note, duration, key) {
     $div.find(".vf-stavenote").remove();
+    $div.data("key", key);
+    $div.data("duration", duration);
 
     let staveNote = new VF.StaveNote({
       clef: "treble",
@@ -204,26 +208,87 @@
     let octaves = getSelectedOctaves();
     let notes = (function () {
       let objList = [];
-        for(let key in noteMap) {
-          if (noteMap.hasOwnProperty(key)) {
-            if (octaves.includes(key)) {
-              objList.push(noteMap[key]);
-            }
+      for (let key in noteMap) {
+        if (noteMap.hasOwnProperty(key)) {
+          if (octaves.includes(key)) {
+            objList.push(noteMap[key]);
           }
         }
-        return Object.assign.apply(null, objList);
+      }
+      return Object.assign.apply(null, objList);
     }());
 
     idx = Math.floor(Math.random() * Object.keys(notes).length);
     let key = Object.keys(notes)[idx];
     let note = Object.values(notes)[idx];
 
-    renderNote(note, duration);
+    renderNote(note, duration, key);
 
     info(note, duration);
+  }
+
+  function initMIDI() {
+    let $notes;
+    let supportsMIDI = false;
+    let midiContext = null;
+
+    window.addEventListener("load", function () {
+      // patch up prefixes
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
+      $notes = document.getElementById("notes");
+      midiContext = new AudioContext();
+      if (navigator.requestMIDIAccess) {
+        navigator.requestMIDIAccess().then(onMIDIInit, onMIDIReject);
+        supportsMIDI = true;
+      }
+      else {
+        alert("No MIDI support present in your browser. You're gonna have a bad time.");
+      }
+    });
+
+    function onMIDIInit(midi) {
+      let haveAtLeastOneDevice = false;
+      const inputs = midi.inputs.values();
+      for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
+        input.value.onmidimessage = MIDIMessageEventHandler;
+        haveAtLeastOneDevice = true;
+      }
+      if (!haveAtLeastOneDevice)
+        alert("No MIDI input devices present.  You're gonna have a bad time.");
+    }
+
+    function onMIDIReject(err) {
+      alert("The MIDI system failed to start.  You're gonna have a bad time.");
+    }
+  }
+
+  function MIDIMessageEventHandler(event) {
+    let key = event.data[1];
+    switch (event.data[0] & 0xf0) {
+      case 0x90:
+        if (event.data[2] !== 0) {  // if velocity != 0, this is a note-on message
+          noteTimeStart = new Date();
+          return;
+        }
+      // if velocity == 0, fall thru: it's a note-off.
+      case 0x80:
+        const noteTimeEnd = new Date();
+        checkNote(key, noteTimeEnd - noteTimeStart);
+        return;
+    }
+  }
+
+  function checkNote(key, duration) {
+    let expectedKey = parseInt($div.data("key"), 10);
+    if (expectedKey === key) {
+      nextNote();
+    }
+    console.log(`${expectedKey} / ${key} - ${duration}`);
   }
 
   $("#next-note").click(nextNote);
 
   nextNote();
+  initMIDI();
 }());
