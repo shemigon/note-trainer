@@ -148,8 +148,13 @@
 
   let noteTimeStart;
 
+  const durationEnabled = false;
+
 // Create an SVG renderer and attach it to the DIV element named "boo".
-  let $div = $("#boo");
+  const $div = $("#boo");
+  const $sharps = $("#id_diez");
+  const $alertRight = $("#alert-right");
+  const $alertWrong = $("#alert-wrong");
 
   let renderer = new VF.Renderer($div.get(0), VF.Renderer.Backends.SVG);
   renderer.resize(500, 200);
@@ -164,7 +169,9 @@
   function renderNote(note, duration, key) {
     $div.find(".vf-stavenote").remove();
     $div.data("key", key);
-    $div.data("duration", duration);
+    if (durationEnabled) {
+      $div.data("duration", duration);
+    }
 
     let staveNote = new VF.StaveNote({
       clef: "treble",
@@ -182,7 +189,12 @@
   const $info = $("#info");
 
   function info(note, duration) {
-    let msg = `Note: ${note},  Duration: ${duration}`;
+    let msg;
+    if (durationEnabled) {
+      msg = `Note: ${note},  Duration: ${duration}.`;
+    } else {
+      msg = `Note: ${note}.`;
+    }
     $info.html(msg);
     console.log(msg);
   }
@@ -217,6 +229,15 @@
       }
       return Object.assign.apply(null, objList);
     }());
+
+    if (!$sharps.prop("checked")) {
+      notes = Object.entries(notes)
+        .filter(([k, v]) => !/^(\w#|\wb).*$/.test(v))
+        .reduce((obj, [k, v]) => {
+          obj[k] = v;
+          return obj
+        }, {});
+    }
 
     idx = Math.floor(Math.random() * Object.keys(notes).length);
     let key = Object.keys(notes)[idx];
@@ -283,6 +304,9 @@
     let expectedKey = parseInt($div.data("key"), 10);
     if (expectedKey === key) {
       nextNote();
+      $alertRight.show().fadeOut(200);
+    } else {
+      $alertWrong.show().fadeOut(200);
     }
     console.log(`${expectedKey} / ${key} - ${duration}`);
   }

@@ -7,14 +7,40 @@
   <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
   <script src="https://npmcdn.com/vexflow/releases/vexflow-debug.js"></script>
 
+  <style>
+    [id^=alert] {
+      display: none;
+      position: absolute;
+      top: 180px;
+      width: 177px;
+      padding: 1rem;
+      border-radius: 0.6rem;
+      left: 14px;
+      text-align: center;
+      color: #fff;
+    }
+
+    #alert-right {
+      background-color: rgba(0, 200, 0, 0.65);
+    }
+
+    #alert-wrong {
+      background-color: rgba(200, 0, 0, 0.65);
+    }
+  </style>
 </head>
 <body>
-<div id="info"></div>
 <p>
-  Octaves: <input type="text" id="octaves" value="3,4,5">
+  Octaves: <input type="text" id="octaves" value="4">
 </p>
+<p>
+  <label for="id_diez"><input type="checkbox" id="id_diez">Sharps</label>
+</p>
+<div id="info"></div>
 <div id="boo"></div>
 <button id="next-note">Next</button>
+<div id="alert-right">Right</div>
+<div id="alert-wrong">Try again!</div>
 <script src="trainer.js"></script>
 </body>
 </html>
